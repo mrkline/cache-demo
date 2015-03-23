@@ -18,13 +18,14 @@ using namespace std::chrono;
 const size_t cacheSize = 8 * 1024 * 1024; // 8 * kB * mB
 
 // The number of integers that fit in the CPU cache,
-// which makes for a good size for our data set.
+// which is useful for picking a sample set size.
 const size_t intsInCache = cacheSize / sizeof(int);
 
-// Used to have to type "high_resolution_clock" repeatedly
+// Used to avoid typing "high_resolution_clock" repeatedly
 // Note that the HRC is not guaranteed to be monotonic,
 // but this shouldn't be a problem so long as you don't
-// change your OS clock while running this. ಠ_ಠ
+// change your OS clock or go through a Daylight Savings Time change
+// while running this. ಠ_ಠ
 using clk = high_resolution_clock;
 
 // Invalidates the entire CPU cache so that it has minimal impact on
@@ -38,6 +39,8 @@ void clearCache()
 	memcpy(buffA, buffB, cacheSize);
 }
 
+// Populates each integer in the given data set
+// using the given random number generator
 template<typename R>
 void populateDataSet(vector<int>& data, R rng)
 {
@@ -47,6 +50,7 @@ void populateDataSet(vector<int>& data, R rng)
 
 void doWork(vector<int*>& data)
 {
+	// Square each value
 	for (int* d : data)
 		*d = *d * *d;
 }
@@ -59,9 +63,9 @@ int main()
 	const auto programStartTime = clk::now();
 
 	// Our test data set
-	vector<int> data(intsInCache * 10);
+	auto data = vector<int>(intsInCache * 10);
 
-	vector<int*> pointers(data.size());
+	auto pointers = vector<int*>(data.size());
 	for (size_t i = 0; i < data.size(); ++i)
 		pointers[i] = &data[i];
 
