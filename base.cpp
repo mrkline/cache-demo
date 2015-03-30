@@ -46,18 +46,23 @@ void populateDataSet(vector<int>& data, R rng)
 {
 	for (int& d : data)
 		d = rng();
+
 }
 
-void doWork(vector<int>& data)
+int doWork(const vector<int>& data)
 {
+	unsigned long sum = 0;
+
 	// Square each value
 	for (int d : data)
-		d = d * d;
+		sum += d * d;
+
+	return (int)(sum / data.size());
 }
 
 int main()
 {
-	const size_t iterations = 1000; // Number of tests to run
+	const unsigned int iterations = 1000; // Number of tests to run
 
 	// Gather the program start time so we can tell how long it ran total.
 	const auto programStartTime = clk::now();
@@ -71,7 +76,7 @@ int main()
 	default_random_engine re(rd());
 	// Since the "work" we are doing is squaring each integer,
 	// initialize them with some value between 0 and the square root of the integer max
-	uniform_int_distribution<int> ud(1, (int)sqrt(numeric_limits<int>::max()));
+	uniform_int_distribution<int> ud(1, 10);
 	// Bundle this all up into a closure that populateDataSet can call:
 	auto rng = [&] { return ud(re); };
 
@@ -79,19 +84,25 @@ int main()
 	// excluding the setup and measurement work we do around them.
 	clk::duration runSum(0);
 
-	for (size_t i = 0; i < iterations; ++i) {
+	for (unsigned int i = 0; i < iterations; ++i) {
 		populateDataSet(data, rng);
 		clearCache();
 
 		// ...and go!
 		const auto runStart = clk::now();
-		doWork(data);
+		const int result = doWork(data);
 		const auto runTime = clk::now() - runStart;
 		runSum += runTime;
+		// We write out the result to make sure the compiler doesn't
+		// eliminate the work as a dead store,
+		// and to give us something to look at.
+		cout << "Run " << i + 1 << ": " << result << "\r";
+		cout.flush();
 	}
+	cout << "\n";
 
 	const auto cumulativeTime = duration_cast<milliseconds>(runSum).count();
-	const auto averageRunTime = duration_cast<nanoseconds>(runSum).count() / iterations;
+	const auto averageRunTime = duration_cast<microseconds>(runSum).count() / iterations;
 	const auto actualRuntime = duration_cast<milliseconds>(clk::now() - programStartTime).count();
 
 	cout << "Ran for a total of " << actualRuntime / 1000 << "." << actualRuntime % 1000
